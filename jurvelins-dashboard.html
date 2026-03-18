@@ -1120,6 +1120,8 @@ async function onToken(resp, silent = false) {
   if (resp.error) { if (!silent) alert('Auth error: ' + resp.error); return; }
   token  = resp.access_token;
   isLive = true;
+  localStorage.setItem('jd_token', token);
+  localStorage.setItem('jd_token_exp', String(Date.now() + (resp.expires_in ? resp.expires_in * 1000 : 3600000)));
   document.getElementById('auth-wrap').innerHTML =
     `<div class="live-badge"><div class="live-dot"></div>Live · Google Connected</div>`;
   document.getElementById('cal-note').textContent = '🔴 Live calendar data';
@@ -1133,6 +1135,7 @@ async function onToken(resp, silent = false) {
   renderAll();
   renderHighlight(); // re-evaluate highlight with live events
   setInterval(async () => { await Promise.all([fetchLiveCal(), loadTasks()]); renderAll(); renderHighlight(); }, 30*60*1000);
+  setInterval(() => startAuth(true), 55*60*1000); // silently refresh token before it expires
 }
 
 // ═══════════════════════════════════════════════════════
