@@ -469,7 +469,12 @@
 
   <!-- MIDDLE: Week -->
   <div class="card week-card">
-    <div class="card-title">📆 This Week</div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-shrink:0">
+      <div class="card-title" style="margin-bottom:0">📆 This Week</div>
+      <a class="phone-btn" href="https://calendar.google.com" target="_blank" rel="noopener">
+        📅 Edit in Google
+      </a>
+    </div>
     <div class="wk-header" id="wk-header"></div>
     <div class="wk-body" id="wk-body"></div>
   </div>
@@ -482,6 +487,12 @@
       <div class="tabs-row">
         <button class="tab-btn active" id="tab-tasks" onclick="switchTab('tasks')">✅ Tasks</button>
         <button class="tab-btn" id="tab-grocery" onclick="switchTab('grocery')">🛒 Grocery</button>
+      </div>
+      <!-- Shared "Edit in Google" — shown after Google auth, visible under both tabs -->
+      <div style="display:none;align-items:center;justify-content:flex-end;padding:4px 0 6px;flex-shrink:0" id="tasks-edit-row">
+        <a class="phone-btn" href="https://tasks.google.com" target="_blank" rel="noopener">
+          ✅ Edit in Google
+        </a>
       </div>
 
       <!-- TASKS PANE -->
@@ -510,9 +521,6 @@
       <div class="tab-pane" id="pane-grocery">
         <div class="grocery-top">
           <div class="card-title" style="margin-bottom:0">🛒 Grocery List</div>
-          <a class="phone-btn" href="https://tasks.google.com" target="_blank">
-            📱 Edit on Phone
-          </a>
         </div>
 
         <div class="grocery-scroll" id="grocery-list"></div>
@@ -1154,6 +1162,7 @@ async function loadTasks() {
   const loaded = document.getElementById('tasks-loaded');
   setup.style.display  = 'none';
   loaded.style.display = 'block';
+  document.getElementById('tasks-edit-row').style.display = 'flex';
   loaded.innerHTML = '<div class="loader"><div class="spin"></div>Loading tasks…</div>';
 
   try {
@@ -1174,7 +1183,7 @@ async function loadTasks() {
       if (!tasks.length) continue;
 
       // Detect grocery list
-      const isGrocery = /grocen|grocery|shopping|shop list/i.test(list.title);
+      const isGrocery = /grocer|grocery|groceries|shopping|shop list/i.test(list.title);
       if (isGrocery) {
         grocFromTasks = tasks.map(t => ({ name: t.title||'(item)', done: false, note: '' }));
         continue;
@@ -1207,6 +1216,18 @@ async function loadTasks() {
     loaded.innerHTML = `<div class="empty" style="color:var(--red)">Error: ${e.message}</div>`;
   }
 }
+
+// ═══════════════════════════════════════════════════════
+//  3AM AUTO-REFRESH (silent background reload)
+// ═══════════════════════════════════════════════════════
+(function schedule3amRefresh() {
+  const now = new Date();
+  const next3am = new Date(now);
+  next3am.setHours(3, 0, 0, 0);
+  if (next3am <= now) next3am.setDate(next3am.getDate() + 1);
+  const ms = next3am - now;
+  setTimeout(() => { location.reload(); }, ms);
+})();
 </script>
 </body>
 </html>
