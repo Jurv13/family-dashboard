@@ -620,7 +620,22 @@ if (savedCid) {
   document.getElementById('cid-inp').value   = savedCid;
   document.getElementById('modal-cid').value = savedCid;
   onCidInput();
-  window.addEventListener('load', () => setTimeout(() => startAuth(true), 800));
+  const storedToken = localStorage.getItem('jd_token');
+  const tokenExp    = parseInt(localStorage.getItem('jd_token_exp') || '0');
+  if (storedToken && tokenExp > Date.now() + 60000) {
+    window.addEventListener('load', async () => {
+      token = storedToken; isLive = true;
+      document.getElementById('auth-wrap').innerHTML =
+        `<div class="live-badge"><div class="live-dot"></div>Live · Google Connected</div>`;
+      document.getElementById('cal-note').textContent = '🔴 Live calendar data';
+      document.getElementById('tasks-edit-row').style.display = 'flex';
+      await Promise.all([fetchLiveCal(), loadTasks()]);
+      renderAll(); renderHighlight();
+      setInterval(async () => { await Promise.all([fetchLiveCal(), loadTasks()]); renderAll(); renderHighlight(); }, 30*60*1000);
+    });
+  } else {
+    window.addEventListener('load', () => setTimeout(() => startAuth(true), 800));
+  }
 }
 
 // ═══════════════════════════════════════════════════════
@@ -1120,6 +1135,8 @@ async function onToken(resp, silent = false) {
   if (resp.error) { if (!silent) alert('Auth error: ' + resp.error); return; }
   token  = resp.access_token;
   isLive = true;
+  localStorage.setItem('jd_token', token);
+  localStorage.setItem('jd_token_exp', String(Date.now() + (resp.expires_in ? resp.expires_in * 1000 : 3600000)));
   localStorage.setItem('jd_token', token);
   localStorage.setItem('jd_token_exp', String(Date.now() + (resp.expires_in ? resp.expires_in * 1000 : 3600000)));
   document.getElementById('auth-wrap').innerHTML =
