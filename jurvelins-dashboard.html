@@ -620,6 +620,7 @@ if (savedCid) {
   document.getElementById('cid-inp').value   = savedCid;
   document.getElementById('modal-cid').value = savedCid;
   onCidInput();
+  window.addEventListener('load', () => setTimeout(() => startAuth(true), 800));
 }
 
 // ═══════════════════════════════════════════════════════
@@ -1095,9 +1096,9 @@ function saveModal() {
   startAuth();
 }
 
-function startAuth() {
+function startAuth(silent = false) {
   const cid = document.getElementById('cid-inp').value.trim() || savedCid;
-  if (!cid) { openModal(); return; }
+  if (!cid) { if (!silent) openModal(); return; }
   savedCid = cid; localStorage.setItem('jd_cid', cid);
   if (typeof google === 'undefined' || !google.accounts) {
     alert('Google Identity Services is still loading — please wait a moment and try again.');
@@ -1109,13 +1110,13 @@ function startAuth() {
       'https://www.googleapis.com/auth/tasks.readonly',
       'https://www.googleapis.com/auth/calendar.readonly'
     ].join(' '),
-    callback: onToken
+    callback: (resp) => onToken(resp, silent)
   });
-  client.requestAccessToken();
+  client.requestAccessToken(silent ? { prompt: '' } : {});
 }
 
-async function onToken(resp) {
-  if (resp.error) { alert('Auth error: ' + resp.error); return; }
+async function onToken(resp, silent = false) {
+  if (resp.error) { if (!silent) alert('Auth error: ' + resp.error); return; }
   token  = resp.access_token;
   isLive = true;
   document.getElementById('auth-wrap').innerHTML =
