@@ -1112,7 +1112,8 @@ function startAuth(silent = false) {
     ].join(' '),
     callback: (resp) => onToken(resp, silent)
   });
-  client.requestAccessToken(silent ? { prompt: '' } : {});
+  const savedEmail = localStorage.getItem('jd_email') || '';
+  client.requestAccessToken(silent ? { prompt: '', login_hint: savedEmail } : {});
 }
 
 async function onToken(resp, silent = false) {
@@ -1122,6 +1123,12 @@ async function onToken(resp, silent = false) {
   document.getElementById('auth-wrap').innerHTML =
     `<div class="live-badge"><div class="live-dot"></div>Live · Google Connected</div>`;
   document.getElementById('cal-note').textContent = '🔴 Live calendar data';
+  // Store email so silent re-auth can skip the account chooser popup
+  try {
+    const ui = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', { headers:{ Authorization:`Bearer ${token}` } });
+    const ud = await ui.json();
+    if (ud.email) localStorage.setItem('jd_email', ud.email);
+  } catch(e) {}
   await Promise.all([fetchLiveCal(), loadTasks()]);
   renderAll();
   renderHighlight(); // re-evaluate highlight with live events
