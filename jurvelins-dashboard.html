@@ -615,6 +615,7 @@ let savedCid  = localStorage.getItem('jd_cid') || '';
 
 // Grocery list stored in localStorage (also shown from Google Tasks if connected)
 let grocItems = JSON.parse(localStorage.getItem('jd_groc') || '[]');
+let grocListId = null;
 
 if (savedCid) {
   document.getElementById('cid-inp').value   = savedCid;
@@ -1042,13 +1043,29 @@ function toggleGroc(i) {
   grocItems[i].done = !grocItems[i].done; saveGroc(); renderGroc();
 }
 
-function addGrocItem() {
+async function addGrocItem() {
   const inp = document.getElementById('groc-inp');
   const val = inp.value.trim();
   if (!val) return;
-  grocItems.push({ name: val, done: false, note: '' });
-  saveGroc(); renderGroc();
   inp.value = '';
+  if (token && grocListId) {
+    try {
+      const r = await fetch(`https://tasks.googleapis.com/tasks/v1/lists/${grocListId}/tasks`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: val })
+      });
+      const t = await r.json();
+      grocItems.push({ name: val, done: false, note: '', id: t.id });
+      renderGroc();
+    } catch(e) {
+      grocItems.push({ name: val, done: false, note: '' });
+      saveGroc(); renderGroc();
+    }
+  } else {
+    grocItems.push({ name: val, done: false, note: '' });
+    saveGroc(); renderGroc();
+  }
   inp.focus();
 }
 renderGroc();
@@ -1122,7 +1139,7 @@ function startAuth(silent = false) {
   const client = google.accounts.oauth2.initTokenClient({
     client_id: cid,
     scope: [
-      'https://www.googleapis.com/auth/tasks.readonly',
+      'https://www.googleapis.com/auth/tasks',
       'https://www.googleapis.com/auth/calendar.readonly'
     ].join(' '),
     callback: (resp) => onToken(resp, silent)
@@ -1213,7 +1230,8 @@ async function loadTasks() {
       // Detect grocery list
       const isGrocery = /grocer|grocery|groceries|shopping|shop list/i.test(list.title);
       if (isGrocery) {
-        grocFromTasks = tasks.map(t => ({ name: t.title||'(item)', done: false, note: '' }));
+        grocListId = list.id;
+        grocFromTasks = tasks.map(t => ({ name: t.title||'(item)', done: false, note: '', id: t.id }));
         continue;
       }
 
