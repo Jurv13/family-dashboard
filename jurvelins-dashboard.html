@@ -632,7 +632,7 @@ if (savedCid) {
       document.getElementById('tasks-edit-row').style.display = 'flex';
       await Promise.all([fetchLiveCal(), loadTasks()]);
       renderAll(); renderHighlight();
-      setInterval(async () => { await Promise.all([fetchLiveCal(), loadTasks()]); renderAll(); renderHighlight(); }, 30*60*1000);
+      setInterval(async () => { await Promise.all([fetchLiveCal(), loadTasks()]); renderAll(); renderHighlight(); }, 5*60*1000);
     });
   } else {
     window.addEventListener('load', () => setTimeout(() => startAuth(true), 800));
